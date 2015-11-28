@@ -4,18 +4,24 @@
 
 
    unsigned char p1_arrow[] = {  KEY_LEFT_ARROW , KEY_RIGHT_ARROW, KEY_UP_ARROW, KEY_DOWN_ARROW };
-   unsigned char p2_arrow[] = {  'w' , 'x', 'y', 'z' };
+   unsigned char p2_arrow[] = {  ';' , '\'', '[', '/' };
 
    
-   unsigned char p1_up[] = { 'a', 'b',  'c',  'd' };
-   unsigned char p2_up[] = { 'i', 'j',  'k',  'l' };
-   unsigned char sub[] = { 'e', 'f',  'g',  'h' };
+   unsigned char p1_up[] = { 'z', 'x',  'f',  
+                             'a' };
+   unsigned char p2_up[] = { 'b', 'n',  'm', 
+                             'g' };
 
-   
-   unsigned char control[] = { 'm', 'n',  'o',  'p' };
+   unsigned char control_white[] = { 'q', 'w', 
+                                    'c',  'd' };
+
+                                
+   unsigned char sub[] = { '1', '2',  
+                           '3',  '4' };
+
 
    unsigned char android_high[] = { 0xB0, 0xD5, 0x83, 0xB1 };
-   unsigned char android_low[] = { MOUSE_RIGHT, 'q', 'r', 's',/* 't' */};
+   unsigned char android_low[] = { MOUSE_RIGHT, 't', 'y', 'u',/* 't' */};
 
 // android BACK   0x04
 // android enter 0x42
@@ -124,7 +130,7 @@ void loop() {
    for ( int i = 0; i < 4; i++)
    {
 
-      check_key(0, buttons[i], i, 0x8,  control[i] );
+      check_key(0, buttons[i], i, 0x8,  control_white[i] );
 
       check_key(1, buttons[i], i, 0x10, p2_arrow[i] );
 

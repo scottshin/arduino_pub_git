@@ -20,8 +20,6 @@
 #include <Time.h>
 #include <DS1307RTC.h>
 
-
-
 #define HC06 Serial3
 
 
@@ -45,10 +43,6 @@ File myFile;
 #define D   A3
 
 
-
-
-
-
 // Last parameter = 'true' enables double-buffering, for flicker-free,
 // buttery smooth animation.  Note that NOTHING WILL SHOW ON THE DISPLAY
 // until the first call to swapBuffers().  This is normal.
@@ -68,8 +62,6 @@ int8_t ball[3][4] = {
   { 17, 15,  1, -1 },
   { 27,  4, -1,  1 }
 };
-
-
 
 int8_t hour_xy[12][4] = {
   {3,1, 3,2 },  // 12 
@@ -118,19 +110,23 @@ int8_t min_bun[10][2] = {
 };
 
 
-#define WHITE     3
-#define GRAY      4
+
 #define GREEN     0
 #define BLUE      1
 #define RED       2
+#define WHITE     3
+#define GRAY      4
+#define YELLOW    5
 
-static const uint16_t PROGMEM ballcolor[5] = {
+static const uint16_t PROGMEM ballcolor[6] = {
   0x0080, // Green=1
   0x0002,  // Blue=1
   0x1000,  // Red=1
    0x1082,  // white
    
-   0x1052 
+   0x1052,   // GRAY
+
+   0x1080  // YELLOW
 };
 
 struct PIXEL {
@@ -198,15 +194,19 @@ void setup() {
   matrix.begin();
   matrix.setTextWrap(false); // Allow text to run off right edge
   matrix.setTextSize(2);
+
+
+  matrix.setRotation( 0 );
 }
 
 
 
-#define ROUND   2
+#define ROUND   (2)
 //#define PITCH(X)  ( X*6 + 3) 
+#define BLOCK   6
 int PITCH(int x )
 {
-    return  1+ (6/2) + (6*x);
+    return  1 + (BLOCK/2) + (BLOCK*x);
 }
 
 void calc( int x, int y, int &dx, int &dy )
@@ -236,23 +236,19 @@ void calc( int x, int y, int &dx, int &dy )
 void display_hour( int hour )
 {
 
-    int x = PITCH(hour_xy[hour][0]);
-    int y = PITCH(hour_xy[hour][1]);
-
-
+    int x = (hour_xy[hour][0]);
+    int y = (hour_xy[hour][1]);
     calc( x, y, pxHour.x, pxHour.y );
-    matrix.fillCircle( pxHour.x, pxHour.y,   ROUND, pgm_read_word(&ballcolor[WHITE]));
+    fill_circle( pxHour.x, pxHour.y, WHITE);
 
       
       if ( hour_xy[hour][2] != -1 )
       {
-          matrix.fillCircle( PITCH(hour_xy[hour][2]), PITCH(hour_xy[hour][3]),   ROUND, pgm_read_word(&ballcolor[WHITE]));
+          fill_circle( (hour_xy[hour][2]), (hour_xy[hour][3]),   WHITE );
       }
 
       // SI
-      matrix.fillCircle( PITCH(4), PITCH(2),   ROUND, pgm_read_word(&ballcolor[GRAY]));
-
-
+      fill_circle( (4), (2), GRAY );
 }
 
 void display_min( int _min )
@@ -262,28 +258,29 @@ void display_min( int _min )
      if ( min_ten[min][0] != -1)
      {
           
-         int x = PITCH(min_ten[min][0]);
-         int y = PITCH(min_ten[min][1]);
+         int x = (min_ten[min][0]);
+         int y = (min_ten[min][1]);
 
           calc( x, y, pxMin.x, pxMin.y );
-          matrix.fillCircle( pxMin.x, pxMin.y,   ROUND, pgm_read_word(&ballcolor[WHITE]));
+          fill_circle( pxMin.x, pxMin.y,   WHITE);
+          
      }
      
      if ( min_ten[min][2] != -1 )
      {
-          matrix.fillCircle( PITCH(min_ten[min][2]), PITCH(min_ten[min][3]),   ROUND, pgm_read_word(&ballcolor[WHITE]));
+          fill_circle( (min_ten[min][2]), (min_ten[min][3]),   WHITE );
      }
 
       if ( min_ten[min][4] != -1 )
      {
-          matrix.fillCircle( PITCH(min_ten[min][4]), PITCH(min_ten[min][5]),   ROUND, pgm_read_word(&ballcolor[WHITE]));
+          fill_circle( (min_ten[min][4]), (min_ten[min][5]),   WHITE );
      }
 
 
     if ( min != 0 )
     {   
     // bun
-      matrix.fillCircle( PITCH(4),PITCH(4),   ROUND, pgm_read_word(&ballcolor[GRAY]));
+      fill_circle( (4),(4),  GRAY );
     } 
 
   
@@ -298,15 +295,36 @@ bool IsDay( int hour )
 
 void display_day( int hour )
 {
-   matrix.fillCircle( PITCH(0), PITCH( IsDay(hour) ? 0 : 3),   ROUND, pgm_read_word(&ballcolor[GREEN]));
+   fill_circle( (0), ( IsDay(hour) ? 0 : 3), IsDay(hour)? GREEN :YELLOW );
 }
 
+
+void fill_circle( int x, int y, int color)
+{
+  /*
+    //matrix.fillCircle( PITCH(x), PITCH(y),   ROUND, pgm_read_word(&ballcolor[color]));
+  matrix.fillCircle( PITCH(x)-1, PITCH(y),   ROUND, pgm_read_word(&ballcolor[color]));
+  matrix.fillCircle( PITCH(x)+1, PITCH(y),   ROUND, pgm_read_word(&ballcolor[color]));
+   matrix.fillCircle( PITCH(x), PITCH(y)-1,   ROUND, pgm_read_word(&ballcolor[color]));
+   matrix.fillCircle( PITCH(x), PITCH(y)+1,   ROUND, pgm_read_word(&ballcolor[color]));
+*/
+  // matrix.fillCircle( PITCH(x), PITCH(y)-1,   ROUND, pgm_read_word(&ballcolor[color]));
+   matrix.fillCircle( PITCH(x)-1, PITCH(y),   ROUND, pgm_read_word(&ballcolor[color]));
+   matrix.fillCircle( PITCH(x), PITCH(y),   ROUND, pgm_read_word(&ballcolor[color]));
+}
+void display_dot( int x, int y )
+{
+
+
+   fill_circle( x, y, GREEN );
+}
 
 void loop() {
   byte i;
 
   // Clear background
   matrix.fillScreen(0);
+
 
 
 
@@ -327,6 +345,8 @@ void loop() {
       RTC.write(tm);
       display_day( 0 );
   }
+
+ // fill_circle(1,3, RED);
 
  
 /*

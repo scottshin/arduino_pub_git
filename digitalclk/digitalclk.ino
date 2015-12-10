@@ -12,6 +12,8 @@
 #define HC06 Serial3
 File myFile;
 
+uint8_t  img24[32*32*3];
+
 
 // Similar to F(), but for PROGMEM string pointers rather than literals
 #define F2(progmem_ptr) (const __FlashStringHelper *)progmem_ptr
@@ -21,22 +23,13 @@ File myFile;
 #define CLK      (11)  // MUST be on PORTB! (Use pin 11 on Mega)
 #define LAT      (10)
 #define OE       (9)
-
 #define A   A0
 #define B   A1
 #define C   A2
 #define D   A3
 
 
-//uint8_t  img24[32*32*3];
-#define SD_CS    (53)    // 7
-uint8_t  img24[32*32*3];
 
-
-// Last parameter = 'true' enables double-buffering, for flicker-free,
-// buttery smooth animation.  Note that NOTHING WILL SHOW ON THE DISPLAY
-// until the first call to swapBuffers().  This is normal.
-//RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, true);
 RGBmatrixPanel matrix( A, B, C, D, CLK, LAT, OE, true, 32);
 
 // Double-buffered mode consumes nearly all the RAM available on the
@@ -192,25 +185,6 @@ void setup()
   processBMPFile("/clock/bg.bmp");
 }
 
-void drawBG()
-{
-  
-    //matrix.swapBuffers(true);
-    for ( int x = 0; x <32; x++)
-    for ( int y = 0; y <32; y++)
-    {
-          matrix.drawPixel( x, y,
-                            matrix.Color888( 
-                                 img24[(31-y)*(32*3) + x*3], 
-                                 img24[(31-y)*(32*3) + x*3+1], 
-                                 img24[(31-y)*(32*3) + x*3+2],
-                                 true    // gamma
-                           )
-
-         );  
-    }
-
-}
 
 
 void drawShape(int x, int y, int sharp)
@@ -280,35 +254,41 @@ void drawTetris()
   
 }
 
+
+
+
+void drawBMP()
+{
+  
+    //matrix.swapBuffers(true);
+    for ( int x = 0; x <32; x++)
+    for ( int y = 0; y <32; y++)
+    {
+          matrix.drawPixel( x, y,
+                            matrix.Color888( 
+                                 img24[(31-y)*(32*3) + x*3], 
+                                 img24[(31-y)*(32*3) + x*3+1], 
+                                 img24[(31-y)*(32*3) + x*3+2],
+                                 true    // gamma
+                           )
+
+         );  
+    }
+
+}
+
 void loop() {
 
-
-
-
-
-
-
-  
   byte i;
 
   tmElements_t tm;
-
-
-
   while ( 1 )
   {
-
-
-
     // Clear background
     matrix.fillScreen(0);
-
-    drawBG();
-
+    drawBMP();
     drawTetris();
 
-
-  
   char buf_hour[10];
   char buf_min[10];
   char sec[4];
@@ -394,7 +374,6 @@ void loop() {
   if (Serial.available()) {
     HC06.write(Serial.read());
   }  
-
 
     delay(1);
   }

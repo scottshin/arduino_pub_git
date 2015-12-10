@@ -196,7 +196,7 @@ void setup() {
   matrix.setTextSize(2);
 
 
-  matrix.setRotation( 0 );
+  matrix.setRotation( 2 );
 }
 
 

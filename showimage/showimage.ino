@@ -1,30 +1,15 @@
-// colorwheel_progmem demo for Adafruit RGBmatrixPanel library.
-// Renders a nice circle of hues on our 32x32 RGB LED matrix:
-// http://www.adafruit.com/products/607
-
-// This version uses precomputed image data stored in PROGMEM
-// rather than calculating each pixel.  Nearly instantaneous!  Woo!
-
-// Written by Limor Fried/Ladyada & Phil Burgess/PaintYourDragon
-// for Adafruit Industries.
-// BSD license, all text above must be included in any redistribution.
-
 #include <Adafruit_GFX.h>   // Core graphics library
 #include <RGBmatrixPanel.h> // Hardware-specific library
-#include "GIFDecoder.h"
-
-
+//#include "GIFDecoder.h"
 
 #include <SPI.h>
 #include <SD.h>
+#include <SoftwareSerial.h>
 
+#include <qnlib.h>
 
 #include <avr/pgmspace.h>
 
-
-#define VAL    0x50
- 
-uint8_t  img24[32*32*3];
 // 
 int  enumerateBMPFiles(const char *directoryName, boolean displayFilenames);
 void getBMPFilenameByIndex( const char *directoryName, int index, char *pnBuf );
@@ -40,6 +25,7 @@ const int defaultBrightness = 255;
 
 
 int num_files;
+const int buttonPin   = 2;
 
     
 
@@ -52,10 +38,6 @@ int num_files;
 #define D   A3
 
 RGBmatrixPanel matrix(A, B, C, D, CLK, LAT, OE, false/*, 32*/);
-
-
-
-const int buttonPin   = 2;
 
 void screenClearCallback(void) {
 
@@ -106,8 +88,7 @@ void setup() {
     matrix.setTextSize(1);
     matrix.setTextWrap(true); // Allow text to run off right edge
 
-  Serial.begin(9600);
-
+	Serial.begin(9600);
 
 
     // initialize the SD card at full speed
@@ -231,69 +212,16 @@ EX:
 }
 
 
-int buttonState = 0;
-bool pushed = false;
-
 void loop() {
   
-    unsigned long futureTime;
-    char pathname[30];
-    static int index = random(num_files);
-
-        // Can clear screen for new animation here, but this might cause flicker with short animations
-        // matrix.fillScreen(COLOR_BLACK);
-         matrix.swapBuffers(true);
-/*
-        getGIFFilenameByIndex(GIF_DIRECTORY, index++, pathname);
-        if (index >= num_files) {
-            index = 0;
-        }
-
-        // Calculate time in the future to terminate animation
-        futureTime = millis() + (DISPLAY_TIME_SECONDS * 1000);
-
-        while (futureTime > millis()) {
-            processGIFFile(pathname);
-        }
-*/       
-        getBMPFilenameByIndex(BMP_DIRECTORY, index++, pathname);
-        if (index >= num_files) {
-            index = 0;
-        }
-
-        Serial.println(pathname);
-        
-
-        // Calculate time in the future to terminate animation
-    //    futureTime = millis() + (DISPLAY_TIME_SECONDS * 1000);
-
-   //     while (futureTime > millis()) {
-            processBMPFile(pathname);
- 
-        
-
-    for ( int x = 0; x <32; x++)
-    for ( int y = 0; y <32; y++)
-    {
-
-          matrix.drawPixel( x, y,
-                            matrix.Color888( 
-                                 img24[y*(32*3) + x*3], 
-                                 img24[y*(32*3) + x*3+1], 
-                                 img24[y*(32*3) + x*3+2],
-                                 true    // gamma
-                           )
-
-         );  
-    }
-
-
-
-
-   
-delay(3000);
-
-
-
-    
+	char pathname[30];
+	static int index = random(num_files);
+  matrix.swapBuffers(true);    
+	getBMPFilenameByIndex(BMP_DIRECTORY, index++, pathname);
+	if (index >= num_files) 
+		index = 0;
+	Serial.println(pathname);
+	processBMPFile(pathname);
+  qn_drawBMP(&matrix);
+	delay(3000);
 }

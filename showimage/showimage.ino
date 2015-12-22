@@ -42,92 +42,6 @@ void qn_drawBMP(RGBmatrixPanel *matrix)
 int  enumerateBMPFiles(const char *directoryName, boolean displayFilenames);
 void getBMPFilenameByIndex( const char *directoryName, int index, char *pnBuf );
 
-int numberOfFiles;
-
-bool isAnimationFile(const char filename []) {
-    if (filename[0] == '_')
-        return false;
-
-    if (filename[0] == '~')
-        return false;
-
-    if (filename[0] == '.')
-        return false;
-
-/*
-    String filenameString = String(filename).toUpperCase();
-    if (filenameString.endsWith(".BMP") != 1)
-        return false;
-        */
-
-    return true;
-}
-
-
-
-// Enumerate and possibly display the animated GIF filenames in GIFS directory
-int enumerateBMPFiles(const char *directoryName, boolean displayFilenames) {
-
-    numberOfFiles = 0;
-
-    File directory = SD.open(directoryName);
-    if (!directory) {
-        return -1;
-    }
-
-    File file = directory.openNextFile();
-    while (file) {
-        if (isAnimationFile(file.name())) {
-            numberOfFiles++;
-            if (displayFilenames) {
-                Serial.println(file.name());
-            }
-        }
-        file.close();
-        file = directory.openNextFile();
-    }
-
-    file.close();
-    directory.close();
-
-    return numberOfFiles;
-}
-
-// Get the full path/filename of the GIF file with specified index
-void getBMPFilenameByIndex(const char *directoryName, int index, char *pnBuffer) {
-
-    char* filename;
-
-    // Make sure index is in range
-    if ((index < 0) || (index >= numberOfFiles))
-        return;
-
-    File directory = SD.open(directoryName);
-    if (!directory)
-        return;
-
-    File file = directory.openNextFile();
-    while (file && (index >= 0)) {
-        filename = file.name();
-
-        if (isAnimationFile(file.name())) {
-            index--;
-
-            // Copy the directory name into the pathname buffer
-            strcpy(pnBuffer, directoryName);
-
-            // Append the filename to the pathname
-            strcat(pnBuffer, filename);
-        }
-
-        file.close();
-        file = directory.openNextFile();
-    }
-
-    file.close();
-    directory.close();
-}
-
 
 
 #define DISPLAY_TIME_SECONDS  (10)
@@ -136,7 +50,7 @@ const int defaultBrightness = 255;
 
 #define SD_CS    (53)    // 7
 #define GIF_DIRECTORY "/gifs/"
-#define BMP_DIRECTORY "/plat_lg/"
+#define BMP_DIRECTORY "/coff_gr/"
 //#define BMP_DIRECTORY "/abc/"
 
 

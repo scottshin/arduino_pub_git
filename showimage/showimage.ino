@@ -1,18 +1,134 @@
 #include <Adafruit_GFX.h>   // Core graphics library
 #include <RGBmatrixPanel.h> // Hardware-specific library
+
+
 //#include "GIFDecoder.h"
 
 #include <SPI.h>
 #include <SD.h>
 #include <SoftwareSerial.h>
 
-#include <qnlib.h>
+
 
 #include <avr/pgmspace.h>
+
+//#include <qnlib.h>
+uint8_t img24[32*32*3];
+void qn_drawBMP(RGBmatrixPanel *matrix)
+{
+    
+    //matrix.swapBuffers(true);
+    for ( int x = 0; x <32; x++)
+        for ( int y = 0; y <32; y++)
+        {
+            matrix->drawPixel( x, y,
+                             matrix->Color888(
+                                             img24[(31-y)*(32*3) + x*3],
+                                             img24[(31-y)*(32*3) + x*3+1],
+                                             img24[(31-y)*(32*3) + x*3+2],
+                                             true    // gamma
+                                             )
+                             
+                             );  
+        }
+    
+}
+
+
+
+
 
 // 
 int  enumerateBMPFiles(const char *directoryName, boolean displayFilenames);
 void getBMPFilenameByIndex( const char *directoryName, int index, char *pnBuf );
+
+int numberOfFiles;
+
+bool isAnimationFile(const char filename []) {
+    if (filename[0] == '_')
+        return false;
+
+    if (filename[0] == '~')
+        return false;
+
+    if (filename[0] == '.')
+        return false;
+
+/*
+    String filenameString = String(filename).toUpperCase();
+    if (filenameString.endsWith(".BMP") != 1)
+        return false;
+        */
+
+    return true;
+}
+
+
+
+// Enumerate and possibly display the animated GIF filenames in GIFS directory
+int enumerateBMPFiles(const char *directoryName, boolean displayFilenames) {
+
+    numberOfFiles = 0;
+
+    File directory = SD.open(directoryName);
+    if (!directory) {
+        return -1;
+    }
+
+    File file = directory.openNextFile();
+    while (file) {
+        if (isAnimationFile(file.name())) {
+            numberOfFiles++;
+            if (displayFilenames) {
+                Serial.println(file.name());
+            }
+        }
+        file.close();
+        file = directory.openNextFile();
+    }
+
+    file.close();
+    directory.close();
+
+    return numberOfFiles;
+}
+
+// Get the full path/filename of the GIF file with specified index
+void getBMPFilenameByIndex(const char *directoryName, int index, char *pnBuffer) {
+
+    char* filename;
+
+    // Make sure index is in range
+    if ((index < 0) || (index >= numberOfFiles))
+        return;
+
+    File directory = SD.open(directoryName);
+    if (!directory)
+        return;
+
+    File file = directory.openNextFile();
+    while (file && (index >= 0)) {
+        filename = file.name();
+
+        if (isAnimationFile(file.name())) {
+            index--;
+
+            // Copy the directory name into the pathname buffer
+            strcpy(pnBuffer, directoryName);
+
+            // Append the filename to the pathname
+            strcat(pnBuffer, filename);
+        }
+
+        file.close();
+        file = directory.openNextFile();
+    }
+
+    file.close();
+    directory.close();
+}
+
+
 
 #define DISPLAY_TIME_SECONDS  (10)
 // range 0-255
@@ -116,12 +232,14 @@ void setup() {
     }
     
 
+/*
 
   //pinMode( buttonPin, INPUT);
 
 
   attachInterrupt( digitalPinToInterrupt(buttonPin), mode_isr0, CHANGE);  
   attachInterrupt(1, mode_isr1, RISING); 
+  */
 
 }
 

@@ -20,11 +20,19 @@
 #include <Time.h>
 #include <DS1307RTC.h>
 
+#include <EEPROM.h>
+
 #define HC06 Serial3
 
 
 File myFile;
 
+
+tmElements_t tm;
+tmElements_t tm_write;
+int write_flag = 0;
+
+  
 
 // Similar to F(), but for PROGMEM string pointers rather than literals
 #define F2(progmem_ptr) (const __FlashStringHelper *)progmem_ptr
@@ -67,15 +75,16 @@ int8_t hour_xy[12][4] = {
   {3,1, 3,2 },  // 12 
   {4,1, -1, -1 },  // 1
   {3,2, -1, -1 },  // 2
-  {2,2, -1, -1 },  // 3
-  {1,2. -1. -1 },  // 4
+  {3,0, -1, -1 },  // 3
+  {4,0, -1. -1 },  // 4
   {1,0, 1, 1},  // 5
   {0,1, 1, 1},  // 6
   {2,0, 2, 1},  // 7
   {0,1, 0, 2},  // 8
-  {3,0, 4, 0},  // 9
+  {1,2, 2, 2},  // 9
   {3,1, -1, -1},  // 10
-  {3,1, 4, 1 }  // 11                 
+  {3,1, 4, 1 }  // 11    
+              
 };
 
 int8_t min_ten[12][6] =
@@ -138,6 +147,8 @@ PIXEL pxHour;
 PIXEL pxMin;
 
 
+int nRotation = 0;
+
 
 void setup() {
 
@@ -189,16 +200,63 @@ void setup() {
 
   //
   //
-  //
+  //e
   
   matrix.begin();
   matrix.setTextWrap(false); // Allow text to run off right edge
   matrix.setTextSize(2);
 
+  nRotation = EEPROM.read( 0);
+  matrix.setRotation( nRotation );
 
-  matrix.setRotation( 2 );
+#if 1
+  attachInterrupt( digitalPinToInterrupt(2), mode_isr0, FALLING);  
+  attachInterrupt(digitalPinToInterrupt(3), mode_isr1, FALLING);   // 1 is digital(3)
+#endif
+
 }
 
+
+void mode_isr0()
+{
+    Serial.println("rotation....");
+ 
+    nRotation = ++nRotation %4;
+    matrix.setRotation( nRotation );
+      
+    EEPROM.write( 0, nRotation );
+  
+}
+void mode_isr1()
+{
+  // set_time
+
+
+
+  tm_write = tm;
+  
+
+
+    if ( tm_write.Minute < 55 )
+    {
+      tm_write.Minute += 5;
+    }
+    else
+    {
+      tm_write.Hour = (++tm_write.Hour) %24;
+      tm_write.Minute = 0;
+    }
+  //   RTC.write(tm);
+
+
+    write_flag = 1;
+
+         Serial.println("time ....");
+              Serial.println(tm_write.Hour);
+           Serial.println(tm_write.Minute);
+
+ 
+}
 
 
 #define ROUND   (2)
@@ -219,8 +277,6 @@ void calc( int x, int y, int &dx, int &dy )
       else
           dx--; 
   }
-  
-
   if ( y != dy )
   {
       if ( y > dy )
@@ -228,8 +284,6 @@ void calc( int x, int y, int &dx, int &dy )
       else
           dy--; 
   }
-  
-  
 }
 
 
@@ -242,7 +296,7 @@ void display_hour( int hour )
     fill_circle( pxHour.x, pxHour.y, WHITE);
 
       
-      if ( hour_xy[hour][2] != -1 )
+    if ( hour_xy[hour][2] != -1 )
       {
           fill_circle( (hour_xy[hour][2]), (hour_xy[hour][3]),   WHITE );
       }
@@ -253,8 +307,7 @@ void display_hour( int hour )
 
 void display_min( int _min )
 {
-
-     int min = (_min /5);  
+    int min = (_min /5);  
      if ( min_ten[min][0] != -1)
      {
           
@@ -275,8 +328,6 @@ void display_min( int _min )
      {
           fill_circle( (min_ten[min][4]), (min_ten[min][5]),   WHITE );
      }
-
-
     if ( min != 0 )
     {   
     // bun
@@ -295,7 +346,12 @@ bool IsDay( int hour )
 
 void display_day( int hour )
 {
-   fill_circle( (0), ( IsDay(hour) ? 0 : 3), IsDay(hour)? GREEN :YELLOW );
+  if ( hour == 99 )
+  {
+    fill_circle( (1),3, RED );
+  }
+  else
+    fill_circle( (0), ( IsDay(hour) ? 0 : 3), IsDay(hour)? GREEN :YELLOW );
 }
 
 
@@ -314,8 +370,6 @@ void fill_circle( int x, int y, int color)
 }
 void display_dot( int x, int y )
 {
-
-
    fill_circle( x, y, GREEN );
 }
 
@@ -327,23 +381,35 @@ void loop() {
 
 
 
+  if ( write_flag )
+  {
+      RTC.write(tm_write);
+      write_flag = 0;
+  }
 
-  tmElements_t tm;
-  
+
+ 
   if ( RTC.read(tm) )
   {
       int h = tm.Hour;
-      if ( tm.Hour > 12 )
+      if ( tm.Hour >= 12 )
         h = tm.Hour -12;
       display_day( tm.Hour );
       display_hour( h );
       display_min(  tm.Minute );
+
+//      Serial.println("readed.. " );
+//        Serial.println(tm.Hour );
+//          Serial.println(h );
   }
   else
   {
-      tm.Hour = 22; tm.Minute = 10;
+      tm.Hour = 22; 
+      tm.Minute = 10;
       RTC.write(tm);
-      display_day( 0 );
+      display_day( 99 );
+
+      Serial.println("read fail ....");
   }
 
  // fill_circle(1,3, RED);

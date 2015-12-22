@@ -50,12 +50,13 @@ const int defaultBrightness = 255;
 
 #define SD_CS    (53)    // 7
 #define GIF_DIRECTORY "/gifs/"
-#define BMP_DIRECTORY "/coff_gr/"
+//#define BMP_DIRECTORY "/coff/"
 //#define BMP_DIRECTORY "/abc/"
 
+char * BMP_DIRECTORY = "/coff/";
 
 int num_files;
-const int buttonPin   = 2;
+const int buttonPin   = 8;
 
     
 
@@ -108,7 +109,7 @@ void setup() {
   // Start up matrix AFTER data is copied.  The RGBmatrixPanel
   // interrupt code ties up about 40% ofk the CPU time, so starting
   // it now allows the prior drawing code to run even faster!
-  matrix.begin();
+    matrix.begin();
   //matrix.setBrightness( defaultBrightness );
 
  // Clear screen
@@ -119,6 +120,7 @@ void setup() {
     matrix.setTextWrap(true); // Allow text to run off right edge
 
 	Serial.begin(9600);
+
 
 
     // initialize the SD card at full speed
@@ -144,45 +146,34 @@ void setup() {
         Serial.println("Empty BMPs directory");
         while(1);
     }
-    
-
-/*
-
-  //pinMode( buttonPin, INPUT);
 
 
-  attachInterrupt( digitalPinToInterrupt(buttonPin), mode_isr0, CHANGE);  
-  attachInterrupt(1, mode_isr1, RISING); 
-  */
+
+#if 1
+//  pinMode( buttonPin, OUTPUT);
+  attachInterrupt( digitalPinToInterrupt(2), mode_isr0, FALLING);  
+  attachInterrupt(digitalPinToInterrupt(3), mode_isr1, FALLING);   // 1 is digital(3)
+#endif
 
 }
 
 void mode_isr0()
 {
  Serial.println("inttruppt....");
+ 
+    matrix.setRotation( 2 );
+  
 }
 void mode_isr1()
 {
 
   
-/*
- * 
-  // read the state of the pushbutton value:
-  buttonState = digitalRead(buttonPin);
-  // check if the pushbutton is pressed.
-  // if it is, the buttonState is HIGH:
-  if (buttonState == HIGH) {
-    // turn LED on:
-    pushed = true;
-  } else {
 
-    if ( pushed == true )
-   */ 
-    {
            Serial.println("pushed....");
     //  pushed = false;
-      num_files = enumerateBMPFiles("/abc/", false );
-    }
+      BMP_DIRECTORY = "/abc/";
+      num_files = enumerateBMPFiles(BMP_DIRECTORY, false );
+
 
 
 }

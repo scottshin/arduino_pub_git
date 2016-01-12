@@ -170,8 +170,6 @@ void setup() {
 
   Serial.println("bluetooth send on!");
   HC06.write("on!!");
-  HC06.write("on!!");
-  HC06.write("on!!");
   HC06.write("df n!!\n");
   
 

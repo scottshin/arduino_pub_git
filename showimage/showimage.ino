@@ -20,14 +20,10 @@ void qn_drawBMP(RGBmatrixPanel *matrix)
     for ( int x = 0; x <32; x++)
         for ( int y = 0; y <32; y++)
         {
-            matrix->drawPixel( x, y,
-                             matrix->Color888(
-                                             img24[(31-y)*(32*3) + x*3],
-                                             img24[(31-y)*(32*3) + x*3+1],
-                                             img24[(31-y)*(32*3) + x*3+2],
-                                             true    // gamma
+            matrix->drawPixel( x, y,  matrix->Color888(   img24[(31-y)*(32*3) + x*3], img24[(31-y)*(32*3) + x*3+1], img24[(31-y)*(32*3) + x*3+2],
+                                                 true    // gamma
                                              )
-                             );  
+            );  
         }
 }
 
@@ -79,6 +75,8 @@ void drawPixelCallback(int16_t x, int16_t y, uint8_t red, uint8_t green, uint8_t
 volatile byte flag0 = LOW; // declare IRQ flag
 volatile byte flag1 = LOW; // declare IRQ flag
 
+int nRotation = 0;
+
 void setup() {
     int     i, len;
     uint8_t *ptr = matrix.backBuffer(); // Get address of matrix data
@@ -109,8 +107,11 @@ void setup() {
  
     matrix.setTextSize(1);
     matrix.setTextWrap(true); // Allow text to run off right edge
+    nRotation = EEPROM.read(0);
+    matrix.setRotation( nRotation );
 
-	Serial.begin(9600);
+
+    Serial.begin(9600);
     while(!Serial) {
       ;
     }
@@ -173,23 +174,17 @@ void setup() {
 
 void mode_isr0()
 {
- Serial.println("inttruppt....");
+    Serial.println("inttruppt....");
  
     matrix.setRotation( 2 );
   
 }
 void mode_isr1()
 {
-
-  
-
-      Serial.println("pushed....");
+    Serial.println("pushed....");
     //  pushed = false;
-      BMP_DIRECTORY = "/abc/";
-      num_files = enumerateBMPFiles(BMP_DIRECTORY, false );
-
-
-
+    BMP_DIRECTORY = "/abc/";
+    num_files = enumerateBMPFiles(BMP_DIRECTORY, false );
 }
 
 
@@ -246,118 +241,97 @@ EX:
 
 }
 
-
+/**
+ *  
+ */
 void btCmdParser()
 {
+    Serial.println("btParser...");
+    SD.remove("sendfile.bmp");
 
-  Serial.println("btParser...");
-
-  SD.remove("sendfile.bmp");
-
-
-
-  File myFile; 
+    File myFile; 
  
-  int step = 0;
-  int inx = 0;
+    int step = 0;
+    int inx = 0;
 
-  char cmd[20];
-  char file[20];
-  char stream[1024];
+    char cmd[20];
+    char file[20];
+    char stream[1024];
 
-  memset ( cmd, 0, 20 );
-  memset ( file, 0, 20 );
+    memset ( cmd, 0, 20 );
+    memset ( file, 0, 20 );
   
-
-  char data;
-  int empty_count = 0;
-
-  int stream_byte = 0;
-
-  do {
-    data = 0;
-    if ( HC06.available() )
-    {
-      empty_count = 0;
-      data = HC06.read();
-      if(data == -1)
-      {
-          Serial.println( "minus data");  
-      }
-      
-      switch ( step )
-      {
-        case 0: if ( data == '[' )
-                  step++;
-                inx = 0;
-                break;
-
-        case 1:  //cmd 
-            cmd[inx++] = data;
-            if ( inx >=4 )  {
-              Serial.print("CMD : ");
-              Serial.println(cmd);
-              step++;
-              inx = 0;
-            }
-            break;
-
-        case 2:  // filename 
-            file[inx++] = data;
-            if ( inx >= 12)  {
-               Serial.print("FILE: ");
-               Serial.println(file);
-              inx = 0;
-              step++;
-              myFile = SD.open( "sendfile.bmp", FILE_WRITE);
-
-              matrix.print("File Recv.");
-            }
-            break;
-        case 3:  // data
+    char data;
+    int empty_count = 0;
+    int stream_byte = 0;
+    do {
+        data = 0;
+        if ( HC06.available() )
+        {
+            empty_count = 0;
+            data = HC06.read();
+            if(data == -1)
+                Serial.println( "minus data");  
+            switch ( step )
             {
-              
-               stream[stream_byte++] = data;
-               if ( inx++ % 127 == 0 )   {
-                   Serial.print("INX         =" );
-                   Serial.println( inx, DEC);
-               }
-               if ( stream_byte>= 1024)
-               {
-                 myFile.write( stream,1024);
-                 stream_byte = 0;
-               }
-              
+                case 0: if ( data == '[' )
+                            step++;
+                        inx = 0;
+                        break;
+                case 1:  //cmd 
+                        cmd[inx++] = data;
+                        if ( inx >=4 )  {
+                            Serial.print("CMD : ");
+                            Serial.println(cmd);
+                            step++;
+                            inx = 0;
+                        }
+                        break;
+
+                case 2:  // filename 
+                        file[inx++] = data;
+                        if ( inx >= 12)  {
+                            Serial.print("FILE: ");
+                            Serial.println(file);
+                            inx = 0;
+                            step++;
+                            myFile = SD.open( "sendfile.bmp", FILE_WRITE);
+                            matrix.print("File Recv.");
+                        }
+                        break;
+                case 3:  // data
+                    {
+                        stream[stream_byte++] = data;
+                        if ( inx++ % 127 == 0 )   {
+                            Serial.print("INX         =" );
+                            Serial.println( inx, DEC);
+                        }
+                        if ( stream_byte>= 1024)
+                        {
+                            myFile.write( stream,1024);
+                            stream_byte = 0;
+                        }
+                    }
+                    break;
             }
-            break;
-      }
-    }
-    else
-    {
-        
-      Serial.println("empty data");
-      if ( empty_count++ > 5 )
-      {
-        data = -1;
+        }
+        else
+        {
+            Serial.println("empty data");
+            if ( empty_count++ > 5 )
+            {
+                data = -1;
+                Serial.print("total copy : " );
+                Serial.println(inx );
 
-        Serial.print("total copy : " );
-        Serial.println(inx );
-
-               myFile.write( stream, stream_byte);
-               myFile.close();
-      }
-
-      
-      
-      delay(200);
-    }
-
-     
-  } while ( data != -1 );
+                myFile.write( stream, stream_byte);
+                myFile.close();
+            }
+            delay(200);
+        }
+    } while ( data != -1 );
    
-
-
-  Serial.println("exit");
+    Serial.println("exit");
 }
 
 

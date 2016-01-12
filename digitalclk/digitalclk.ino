@@ -231,8 +231,6 @@ void drawShape(int x, int y, int sharp)
            matrix.drawLine( x, y+1, x+1, y+1,  matrix.Color888(255,0,255) );
           break;
     }
-
-  
 }
 
 
@@ -277,7 +275,135 @@ void drawBMP()
 
 }
 
-void loop() {
+
+
+void loop()
+{
+    byte i = 0;
+    int step = 0;
+    int old_step = 0;
+    tmElements_t tm;
+
+
+    int xpos = 16;
+    int ypos = 16;
+    uint16_t color [ 10 ];
+
+    color [0] = matrix.Color888(0xff,0xc0,0xCB);
+    color [1] = matrix.Color888(0xff,0xff,0x00);
+    color [2] = matrix.Color888(0x93,0x70,0xdb);
+    color [3] = matrix.Color888(0x7f,0xff,0x00);
+    color [4] = matrix.Color888(0x7f,0xff,0xd4);
+    color [5] = matrix.Color888(0xfa,0xf0,0xe6);
+    color [6] = matrix.Color888(0xf5,0xde,0xb3);
+    color [7] = matrix.Color888(0xf0,0xff,0xff);
+    color [8] = matrix.Color888(0xee,0x82,0xee);
+    color [9] = matrix.Color888(0xbd,0xb7,0x6b);
+    
+    while ( 1 )
+    {   
+        // Clear background
+        matrix.fillScreen( 0 );
+
+
+
+
+   
+        
+        if (i++  > 42 )
+        {
+            old_step = step;
+            step = (++step % 10);
+            i = 0;
+
+            xpos = random(32);
+            ypos = random(32);
+        }
+
+        matrix.fillScreen( color[old_step] );
+        matrix.fillCircle( xpos, ypos, i, color[step] );
+        
+   //     drawBMP();
+   //     drawTetris();
+
+
+        
+        char buf_hour[10];
+        char buf_min[10];
+        char sec[4];
+        if ( RTC.read(tm) )
+        {
+            int h = tm.Hour;
+            if ( tm.Hour > 12 )
+                h = tm.Hour -12;
+
+            sprintf( buf_hour, "%02d",h );
+            sprintf( buf_min, "%02d", tm.Minute );
+            sprintf( sec, "%02d", tm.Second);
+        }
+        else
+        {
+            tm.Hour = 22; tm.Minute = 10;
+            RTC.write(tm);   
+        }
+
+
+
+
+
+#if 0      
+        // _______________________________________________
+        matrix.setTextSize(3);  
+        matrix.setTextColor(matrix.Color888(32,45,45));
+        matrix.setCursor(0, 5);
+        matrix.print(sec[0] );
+        matrix.setCursor(17, 5);
+        matrix.print(sec[1]);
+#endif
+  
+        matrix.setTextSize(1);
+  
+        // Draw big scrolly text on top
+        matrix.setTextColor(matrix.ColorHSV(255/*hue*/, 255, 255, true));
+        matrix.setCursor(2, 12);
+        matrix.print(buf_hour);
+        matrix.setCursor(19, 12);
+        matrix.print(buf_min);
+
+        matrix.setCursor(14, 12);
+        matrix.print(":");
+        matrix.setCursor(13, 12);
+        matrix.print(":");
+
+
+  
+/*
+  matrix.setTextSize(0);
+  matrix.setTextColor(matrix.Color888(255, 255, 255, true));
+  matrix.setCursor(0, 0);
+  matrix.print("12/23 SAT");
+*/
+        // Move text left (w/wrap), increase hue
+        if ((--textX) < textMin) 
+            textX = matrix.width();
+        hue += 7;
+        if (hue >= 1536)
+            hue -= 1536;
+
+        // Update display
+        matrix.swapBuffers(false);
+        delay(1);
+    }
+
+
+    
+}
+     
+
+
+
+
+void loop_() {
 
   byte i;
 

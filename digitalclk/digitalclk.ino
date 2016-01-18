@@ -1,3 +1,7 @@
+//
+//  Digital Clock 
+//
+
 #include <Adafruit_GFX.h>   // Core graphics library
 #include <RGBmatrixPanel.h> // Hardware-specific library
                                           
@@ -23,13 +27,12 @@ uint8_t  img24[32*32*3];
 #define CLK      (11)  // MUST be on PORTB! (Use pin 11 on Mega)
 #define LAT      (10)
 #define OE       (9)
-#define A   A0
-#define B   A1
-#define C   A2
-#define D   A3
+#define A   (A0)
+#define B   (A1)
+#define C   (A2)
+#define D   (A3)
 
-
-
+//
 RGBmatrixPanel matrix( A, B, C, D, CLK, LAT, OE, true, 32);
 
 // Double-buffered mode consumes nearly all the RAM available on the
@@ -112,7 +115,6 @@ void processBMPFile( char * szFile )
           line = 0;
         }
  
-
         img24[ inx    ] = r;
         img24[ inx +1 ] = g;
         img24[ inx +2 ] = b;
@@ -164,25 +166,25 @@ void setup()
   // so you have to close this one before opening another.
   myFile = SD.open("test.txt", FILE_WRITE);
   // if the file opened okay, write to it:
-  if (myFile) {
-    Serial.print("Writing to test.txt...");
-    myFile.println("testing 1, 2, 3.");
+    if (myFile) {
+        Serial.print("Writing to test.txt...");
+        myFile.println("testing 1, 2, 3.");
     // close the file:
     myFile.close();
     Serial.println("done.");
-  } else {
-    // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
-  }
+    } else {
+        // if the file didn't open, print an error:
+        Serial.println("error opening test.txt");
+    }
 
   //
   //
   //
-  matrix.begin();
-  matrix.setTextWrap(false); // Allow text to run off right edge
-  matrix.setRotation( 1 );
+    matrix.begin();
+    matrix.setTextWrap(false); // Allow text to run off right edge
+    matrix.setRotation( 1 );
 
-  processBMPFile("/clock/bg.bmp");
+    processBMPFile("/clock/bg.bmp");
 }
 
 
@@ -289,31 +291,41 @@ void loop()
     int ypos = 16;
     uint16_t color [ 10 ];
 
-    color [0] = matrix.Color888(0xff,0xc0,0xCB);
-    color [1] = matrix.Color888(0xff,0xff,0x00);
-    color [2] = matrix.Color888(0x93,0x70,0xdb);
-    color [3] = matrix.Color888(0x7f,0xff,0x00);
-    color [4] = matrix.Color888(0x7f,0xff,0xd4);
-    color [5] = matrix.Color888(0xfa,0xf0,0xe6);
-    color [6] = matrix.Color888(0xf5,0xde,0xb3);
-    color [7] = matrix.Color888(0xf0,0xff,0xff);
+
+    color [0] = matrix.Color888(0x93, 0x4A, 0x5f ,true);
+    color [1] = matrix.Color888(0x57, 0x64, 0x8C, true );
+    color [2] = matrix.Color888(0xC2, 0xB4, 0xD6, true );
+    color [3] = matrix.Color888(0xE5, 0xE5, 0xE5, true );
+
+    color [4] = matrix.Color888(0x4c, 0x45, 0x56 ,true);
+    color [5] = matrix.Color888(0x87, 0x26, 0x42, true );
+    color [6] = matrix.Color888(0xf6, 0xc0, 0x26, true );
+    color [7] = matrix.Color888(0xa0, 0xd3, 0xf9, true );
+    
+     
+ //   color [0] = matrix.Color888(0xff,0xc0,0xCB);
+ //   color [1] = matrix.Color888(0xff,0xff,0x00);
+ //   color [2] = matrix.Color888(0x93,0x70,0xdb);
+ //   color [3] = matrix.Color888(0x7f,0xff,0x00);
+ //   color [4] = matrix.Color888(0x7f,0xff,0xd4);
+//    color [5] = matrix.Color888(0xfa,0xf0,0xe6);
+//    color [6] = matrix.Color888(0xf5,0xde,0xb3);
+//    color [7] = matrix.Color888(0xf0,0xff,0xff);
     color [8] = matrix.Color888(0xee,0x82,0xee);
     color [9] = matrix.Color888(0xbd,0xb7,0x6b);
+
+
+
     
     while ( 1 )
     {   
         // Clear background
         matrix.fillScreen( 0 );
 
-
-
-
-   
-        
         if (i++  > 42 )
         {
             old_step = step;
-            step = (++step % 10);
+            step = (++step % 8);
             i = 0;
 
             xpos = random(32);
@@ -325,7 +337,6 @@ void loop()
         
    //     drawBMP();
    //     drawTetris();
-
 
         
         char buf_hour[10];
@@ -347,10 +358,6 @@ void loop()
             RTC.write(tm);   
         }
 
-
-
-
-
 #if 0      
         // _______________________________________________
         matrix.setTextSize(3);  
@@ -361,22 +368,23 @@ void loop()
         matrix.print(sec[1]);
 #endif
   
-        matrix.setTextSize(1);
-  
+        matrix.setTextSize(9);
+
         // Draw big scrolly text on top
-        matrix.setTextColor(matrix.ColorHSV(255/*hue*/, 255, 255, true));
-        matrix.setCursor(2, 12);
+       // matrix.setTextColor(matrix.ColorHSV(255/*hue*/, 255, 255, true));
+        matrix.setTextColor( matrix.Color888( 1,3,1) );
+        matrix.setCursor(11, 24);
         matrix.print(buf_hour);
-        matrix.setCursor(19, 12);
+      
+        matrix.setCursor(22, 24);
         matrix.print(buf_min);
 
-        matrix.setCursor(14, 12);
+        matrix.setCursor(18, 24);
         matrix.print(":");
-        matrix.setCursor(13, 12);
-        matrix.print(":");
-
-
   
+
+
+
 /*
   matrix.setTextSize(0);
   matrix.setTextColor(matrix.Color888(255, 255, 255, true));
@@ -394,9 +402,6 @@ void loop()
         matrix.swapBuffers(false);
         delay(1);
     }
-
-
-    
 }
      
 

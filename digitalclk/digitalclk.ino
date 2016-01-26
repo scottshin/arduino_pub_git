@@ -13,10 +13,18 @@
 #include <Time.h>
 #include <DS1307RTC.h>
 
+#include <EEPROM.h>
+
+
 #define HC06 Serial3
 File myFile;
 
 uint8_t  img24[32*32*3];
+
+tmElements_t tm;
+tmElements_t tm_write;
+int write_flag = 0;
+
 
 
 // Similar to F(), but for PROGMEM string pointers rather than literals
@@ -76,6 +84,8 @@ struct PIXEL {
 PIXEL pxHour;
 PIXEL pxMin;
 
+
+int nRotation = 0;
 
 void processBMPFile( char * szFile )
 {
@@ -182,10 +192,64 @@ void setup()
   //
     matrix.begin();
     matrix.setTextWrap(false); // Allow text to run off right edge
-    matrix.setRotation( 1 );
+
+    
+  nRotation = EEPROM.read( 0);
+  matrix.setRotation( nRotation );
+
+  #if 1
+  attachInterrupt( digitalPinToInterrupt(2), mode_isr0, FALLING);  
+  attachInterrupt(digitalPinToInterrupt(3), mode_isr1, FALLING);   // 1 is digital(3)
+#endif
+
+
 
     processBMPFile("/clock/bg.bmp");
 }
+
+
+
+void mode_isr0()
+{
+    Serial.println("rotation....");
+ 
+    nRotation = ++nRotation %4;
+    matrix.setRotation( nRotation );
+      
+    EEPROM.write( 0, nRotation );
+  
+}
+void mode_isr1()
+{
+  // set_time
+
+
+
+  tm_write = tm;
+  
+
+
+    if ( tm_write.Minute < 55 )
+    {
+      tm_write.Minute += 5;
+    }
+    else
+    {
+      tm_write.Hour = (++tm_write.Hour) %24;
+      tm_write.Minute = 0;
+    }
+  //   RTC.write(tm);
+
+
+    write_flag = 1;
+
+         Serial.println("time ....");
+              Serial.println(tm_write.Hour);
+           Serial.println(tm_write.Minute);
+
+ 
+}
+
 
 
 

@@ -1,3 +1,8 @@
+//
+// Show Image
+//
+
+
 #include <Adafruit_GFX.h>   // Core graphics library
 #include <RGBmatrixPanel.h> // Hardware-specific library
 
@@ -11,6 +16,9 @@
 #define HC06 Serial3
 
 #include <avr/pgmspace.h>
+
+#include <EEPROM.h>
+
 
 //#include <qnlib.h>
 uint8_t img24[32*32*3];
@@ -41,7 +49,7 @@ const int defaultBrightness = 255;
 //#define BMP_DIRECTORY "/coff/"
 //#define BMP_DIRECTORY "/abc/"
 
-char * BMP_DIRECTORY = "/plat/";
+char * BMP_DIRECTORY = "/plat_lg/";
 
 int num_files;
 const int buttonPin   = 8;
@@ -81,9 +89,7 @@ void setup() {
     int     i, len;
     uint8_t *ptr = matrix.backBuffer(); // Get address of matrix data
 
-
-
-  Serial.println("reboot!");
+    Serial.println("reboot!");
 
   
   // Copy image from PROGMEM to matrix buffer:
@@ -113,7 +119,7 @@ void setup() {
 
     Serial.begin(9600);
     while(!Serial) {
-      ;
+        ;
     }
 
     HC06.begin(9600); // set the data rate for the BT port
@@ -126,11 +132,6 @@ void setup() {
   // 115200 can be too fast at times for NewSoftSerial to relay the data reliably
   HC06.begin(115200);  // S
 */
-    
-
-    
-
-
     // initialize the SD card at full speed
     pinMode(SD_CS, OUTPUT);
     if (!SD.begin(SD_CS)) {
@@ -152,7 +153,6 @@ void setup() {
     if(!num_files) {
         //matrix.scrollText("Empty gifs directory", -1);
         matrix.print( "empty BMPs directory" );
-
         Serial.print(BMP_DIRECTORY );
         Serial.println("Empty BMPs directory");
         while(1);
@@ -160,38 +160,43 @@ void setup() {
 #endif
 
 
+    
+  nRotation = EEPROM.read( 0);
+  matrix.setRotation( nRotation );
+
 #if 1
-//  pinMode( buttonPin, OUTPUT);
   attachInterrupt( digitalPinToInterrupt(2), mode_isr0, FALLING);  
   attachInterrupt(digitalPinToInterrupt(3), mode_isr1, FALLING);   // 1 is digital(3)
 #endif
 
-
-
-  matrix.print("Boot Okay!");
-
+    matrix.print("Boot Okay!");
 }
 
 void mode_isr0()
 {
-    Serial.println("inttruppt....");
+    Serial.println("rotation....");
  
-    matrix.setRotation( 2 );
-  
+    nRotation = ++nRotation %4;
+    matrix.setRotation( nRotation );
+      
+    EEPROM.write( 0, nRotation );
 }
+
 void mode_isr1()
 {
+
+    
     Serial.println("pushed....");
     //  pushed = false;
     BMP_DIRECTORY = "/abc/";
     num_files = enumerateBMPFiles(BMP_DIRECTORY, false );
 }
 
-
 void processBMPFile( char * szFile )
 {
-  File myFile = SD.open(szFile, FILE_READ);
-  int inx = 0;
+
+    File myFile = SD.open(szFile, FILE_READ);
+    int inx = 0;
   if ( myFile == false)
   {
         matrix.print("open err");
@@ -238,7 +243,6 @@ void processBMPFile( char * szFile )
 EX:
     myFile.close();
     Serial.println("read ok...");
-
 }
 
 /**

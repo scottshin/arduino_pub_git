@@ -11,10 +11,9 @@
                                           
 
 #include <SPI.h>
+
 #include <SD.h>
-
 #include <SoftwareSerial.h>
-
 
 #include <Wire.h>
 #include <Time.h>
@@ -23,14 +22,13 @@
 #include <EEPROM.h>
 
 #define HC06 Serial3
-
-
 File myFile;
 
 
-tmElements_t tm;
-tmElements_t tm_write;
+
+
 int write_flag = 0;
+
 
   
 
@@ -126,8 +124,11 @@ int8_t min_bun[10][2] = {
 #define WHITE     3
 #define GRAY      4
 #define YELLOW    5
+#define DARKWHITE 6
 
-static const uint16_t PROGMEM ballcolor[6] = {
+
+
+static const uint16_t PROGMEM ballcolor[7] = {
   0x0080, // Green=1
   0x0002,  // Blue=1
   0x1000,  // Red=1
@@ -135,8 +136,11 @@ static const uint16_t PROGMEM ballcolor[6] = {
    
    0x1052,   // GRAY
 
-   0x1080  // YELLOW
+   0x1080,  // YELLOW
+
+   0x1082// DARKWHITE
 };
+
 
 struct PIXEL {
   int x;
@@ -148,6 +152,8 @@ PIXEL pxMin;
 
 
 int nRotation = 0;
+bool flagTime = false;
+
 
 
 void setup() {
@@ -164,7 +170,11 @@ void setup() {
   }
 
   Serial.println("program start!");
-  
+
+
+
+
+#if 0
   HC06.begin(9600); // set the data rate for the BT port
 
 
@@ -172,8 +182,8 @@ void setup() {
   HC06.write("on!!");
   HC06.write("df n!!\n");
   
-
-
+#endif
+#if 0
   Serial.println("Initializing SD card...");
 
   if (!SD.begin(SD_CS)) {
@@ -193,43 +203,74 @@ void setup() {
     // if the file didn't open, print an error:
     Serial.println("error opening test.txt");
   }
+#endif
+
+/*
+uint16_t a  = Color888(128,128, 128);
+Serial.print( a );
+*/
 
 
 
-  //
-  //
-  //e
+    tmElements_t tm_write;
+    tm_write.Hour = 12;
+    tm_write.Minute = 0;
+    if ( RTC.read(tm_write) )
+        {
+
+        }
+        else
+        {
+       //     tm.Hour = 22; tm.Minute = 10;
+         RTC.write(tm_write);   
+           Serial.println("reset");
+        }
+
+
   
   matrix.begin();
   matrix.setTextWrap(false); // Allow text to run off right edge
   matrix.setTextSize(2);
 
+#if 0
   nRotation = EEPROM.read( 0);
   matrix.setRotation( nRotation );
+#endif
 
 #if 1
-  attachInterrupt( digitalPinToInterrupt(2), mode_isr0, FALLING);  
-  attachInterrupt(digitalPinToInterrupt(3), mode_isr1, FALLING);   // 1 is digital(3)
+ attachInterrupt( digitalPinToInterrupt(2), mode_isr0, FALLING);  
+ // attachInterrupt( digitalPinToInterrupt(3), mode_isr1, FALLING);  
+ // attachInterrupt(digitalPinToInterrupt(6), mode_isr2, FALLING);   // 1 is digital(3)
 #endif
 
 }
 
 
+uint16_t Color888(uint8_t r, uint8_t g, uint8_t b) {
+  return ((r & 0xF8) << 11) | ((g & 0xFC) << 5) | (b >> 3);
+}
+
+
+
 void mode_isr0()
 {
+     flagTime = 1;
+     
+   /*
     Serial.println("rotation....");
  
     nRotation = ++nRotation %4;
     matrix.setRotation( nRotation );
       
     EEPROM.write( 0, nRotation );
-  
+  */
 }
 void mode_isr1()
 {
   // set_time
-
-
+   Serial.println("set time....");
+   flagTime = 1;
+/*
 
   tm_write = tm;
   
@@ -253,8 +294,17 @@ void mode_isr1()
               Serial.println(tm_write.Hour);
            Serial.println(tm_write.Minute);
 
- 
+
+    flagTime = true;
+    */
 }
+
+void mode_isr2()
+{
+  // set_time
+   Serial.println("set isr 2....");
+}
+
 
 
 #define ROUND   (2)
@@ -285,25 +335,25 @@ void calc( int x, int y, int &dx, int &dy )
 }
 
 
-void display_hour( int hour )
+void display_hour( int hour, bool isDay )
 {
 
     int x = (hour_xy[hour][0]);
     int y = (hour_xy[hour][1]);
     calc( x, y, pxHour.x, pxHour.y );
-    fill_circle( pxHour.x, pxHour.y, WHITE);
+    fill_circle( pxHour.x, pxHour.y,  isDay ? WHITE : DARKWHITE);
 
       
     if ( hour_xy[hour][2] != -1 )
       {
-          fill_circle( (hour_xy[hour][2]), (hour_xy[hour][3]),   WHITE );
+          fill_circle( (hour_xy[hour][2]), (hour_xy[hour][3]),  isDay ? WHITE : DARKWHITE );
       }
 
       // SI
       fill_circle( (4), (2), GRAY );
 }
 
-void display_min( int _min )
+void display_min( int _min, bool isDay )
 {
     int min = (_min /5);  
      if ( min_ten[min][0] != -1)
@@ -313,18 +363,18 @@ void display_min( int _min )
          int y = (min_ten[min][1]);
 
           calc( x, y, pxMin.x, pxMin.y );
-          fill_circle( pxMin.x, pxMin.y,   WHITE);
+          fill_circle( pxMin.x, pxMin.y,    isDay ? WHITE : DARKWHITE);
           
      }
      
      if ( min_ten[min][2] != -1 )
      {
-          fill_circle( (min_ten[min][2]), (min_ten[min][3]),   WHITE );
+          fill_circle( (min_ten[min][2]), (min_ten[min][3]),    isDay ? WHITE : DARKWHITE );
      }
 
       if ( min_ten[min][4] != -1 )
      {
-          fill_circle( (min_ten[min][4]), (min_ten[min][5]),   WHITE );
+          fill_circle( (min_ten[min][4]), (min_ten[min][5]),    isDay ? WHITE : DARKWHITE );
      }
     if ( min != 0 )
     {   
@@ -342,14 +392,14 @@ bool IsDay( int hour )
   return false;
 }
 
-void display_day( int hour )
+void display_day( int hour, bool bDay )
 {
   if ( hour == 99 )
   {
     fill_circle( (1),3, RED );
   }
   else
-    fill_circle( (0), ( IsDay(hour) ? 0 : 3), IsDay(hour)? GREEN :YELLOW );
+    fill_circle( (0), ( bDay ? 0 : 3), bDay ? GREEN :YELLOW );
 }
 
 
@@ -365,6 +415,9 @@ void fill_circle( int x, int y, int color)
   // matrix.fillCircle( PITCH(x), PITCH(y)-1,   ROUND, pgm_read_word(&ballcolor[color]));
    matrix.fillCircle( PITCH(x)-1, PITCH(y),   ROUND, pgm_read_word(&ballcolor[color]));
    matrix.fillCircle( PITCH(x), PITCH(y),   ROUND, pgm_read_word(&ballcolor[color]));
+
+//   matrix.fillCircle( PITCH(x)-1, PITCH(y),   ROUND, ballcolor[color] );
+//   matrix.fillCircle( PITCH(x), PITCH(y),   ROUND,  ballcolor[color]  );
 }
 void display_dot( int x, int y )
 {
@@ -372,29 +425,30 @@ void display_dot( int x, int y )
 }
 
 void loop() {
+
+    
   byte i;
+  tmElements_t tm;
+
+  
 
   // Clear background
   matrix.fillScreen(0);
 
 
 
-  if ( write_flag )
-  {
-      RTC.write(tm_write);
-      write_flag = 0;
-  }
-
-
- 
   if ( RTC.read(tm) )
   {
       int h = tm.Hour;
       if ( tm.Hour >= 12 )
         h = tm.Hour -12;
-      display_day( tm.Hour );
-      display_hour( h );
-      display_min(  tm.Minute );
+
+
+      bool bDay = IsDay( tm.Hour ) ;
+        
+      display_day( tm.Hour , bDay);
+      display_hour( h , bDay);
+      display_min(  tm.Minute , bDay);
 
 //      Serial.println("readed.. " );
 //        Serial.println(tm.Hour );
@@ -402,13 +456,44 @@ void loop() {
   }
   else
   {
-      tm.Hour = 22; 
-      tm.Minute = 10;
-      RTC.write(tm);
-      display_day( 99 );
+      //tm.Hour = 22; 
+      //tm.Minute = 10;
+      //RTC.write(tm);
+      display_day( 99, false );
 
       Serial.println("read fail ....");
   }
+
+      if ( flagTime )
+        {
+
+            flagTime = false;
+            tmElements_t tm_write = tm;
+
+    
+ 
+            if ( tm_write.Minute < 55 )
+            {
+      
+                tm_write.Minute = (tm_write.Minute -tm_write.Minute %5) +5;
+                tm_write.Second = 0;
+            }
+            else
+            {
+              tm_write.Hour = (++tm_write.Hour) %24;
+              tm_write.Minute = 0;
+              tm_write.Second = 0;
+            }
+            
+      
+            RTC.write(tm_write);
+            Serial.println("set times.");  
+        }
+
+
+        delay(200);
+
+        
 
  // fill_circle(1,3, RED);
 
@@ -437,18 +522,19 @@ void loop() {
   matrix.print(F2(str));
 */  
 
+/*
   // Move text left (w/wrap), increase hue
   if((--textX) < textMin) 
       textX = matrix.width();
   hue += 7;
   if(hue >= 1536) hue -= 1536;
-
+*/
 
 
     // Update display
     matrix.swapBuffers(false);
 
-
+/*
     char data;
     while(HC06.available()) {
       data = HC06.read();
@@ -456,15 +542,11 @@ void loop() {
       Serial.print(data);
       delay(1);
    }  
-/*
-  // BT –> Data –> Serial
-  if (HC06.available()) {
-    Serial.write(HC06.read());
-  }
-*/
+
   // Serial –> Data –> BT
   if (Serial.available()) {
     HC06.write(Serial.read());
   }  
+  */
      
 }

@@ -49,7 +49,7 @@ const int defaultBrightness = 255;
 //#define BMP_DIRECTORY "/coff/"
 //#define BMP_DIRECTORY "/abc/"
 
-char * BMP_DIRECTORY = "/plat_lg/";
+char * BMP_DIRECTORY = "/COFF/";
 
 int num_files;
 const int buttonPin   = 8;
@@ -340,7 +340,7 @@ void btCmdParser()
 
 void loop() {
 
-/*
+
 	char pathname[30];
 	static int index = random(num_files);
   matrix.swapBuffers(true);    
@@ -352,8 +352,8 @@ void loop() {
 	processBMPFile(pathname);
   qn_drawBMP(&matrix);
 	delay(1000);
-*/
 
+/*
   char data;
   while(HC06.available()) {
       data = HC06.read();
@@ -373,6 +373,6 @@ void loop() {
           // skip
       }
    }  
-
+*/
    
 }

@@ -194,7 +194,7 @@ void setup()
     matrix.setTextWrap(false); // Allow text to run off right edge
 
     
-  nRotation = EEPROM.read( 0);
+  nRotation =3;// EEPROM.read( 0);
   matrix.setRotation( nRotation );
 
   #if 1

@@ -160,8 +160,8 @@ void setup() {
 
 
     
- // nRotation = EEPROM.read( 0);
- // matrix.setRotation( nRotation );
+  nRotation = EEPROM.read( 0);
+  matrix.setRotation(3/*nRotation*/ );
 
 #if 1
   attachInterrupt( digitalPinToInterrupt(2), mode_isr1, FALLING);  

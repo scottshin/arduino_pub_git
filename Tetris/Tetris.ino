@@ -3,6 +3,8 @@
 #include <Adafruit_GFX.h>
 #include <RGBmatrixPanel.h>
 
+#include <SoftwareSerial.h>
+#define HC06    Serial3
 
 #include <qnlib.h>
 
@@ -11,6 +13,7 @@
 
 #include "Wire.h"
 #include "BTConnect.h"
+
 
 
 BTConnect wii = BTConnect();
@@ -23,9 +26,12 @@ BTConnect wii = BTConnect();
 #define GAME_COLUMNS 10
 #define GAME_ROWS 20
 
-const int LEFT_INDENT = 12;
-const int TOP_INDENT = 6;
+const int LEFT_INDENT = 10;
+const int TOP_INDENT = 10;
 
+
+#define NEXT_LEFT   (LEFT_INDENT+14)
+#define NEXT_TOP    (TOP_INDENT +2)
 
 
  
@@ -69,9 +75,13 @@ byte currentRow = 0;
 byte currentColumn = 0;
 byte gameLines = 0;
 boolean gameOver = false;
+unsigned long gameScore = 0;
+unsigned long displayScore = 0;
 
 unsigned long loopStartTime = 0;
 
+
+int hue      = 0;;
 float Normalize(int min, int max, int value)
 {
 	float result = -1.0 + (float)((value - min) << 1) / (max - min);
@@ -81,6 +91,7 @@ float Normalize(int min, int max, int value)
 
 void setup() 
 {
+    
 	randomSeed(analogRead(0));
 
 	//Serial.begin(9600);
@@ -89,12 +100,115 @@ void setup()
 	wii.begin();
 	wii.update();
 	leds.begin();
+
+
+
+   leds.setTextSize(9);
  
-  leds.setRotation(2);
+  leds.setRotation(3);
   leds.fillScreen(2);
 	
 	startGame();
 	//leds.show();
+
+
+  Serial.begin(9600);
+  while(!Serial) { ; }
+  HC06.begin(9600); //set the data rate for the BT prot
+  Serial.println("bluetooth send on");
+  
+  
+}
+
+
+
+/**
+ *  
+ */
+void btCmdParser()
+{ 
+    int step = 0;
+    int inx = 0;
+
+    char cmd[20];
+    
+    char stream[1024];
+    memset ( cmd, 0, 20 );
+    
+  
+    char data;
+    int empty_count = 0;
+    int stream_byte = 0;
+    do {
+        data = 0;
+        if ( HC06.available() )
+        {
+            empty_count = 0;
+            data = HC06.read();
+            if(data == -1)
+                Serial.println( "minus data");  
+            switch ( step )
+            {
+                case 0: if ( data == '[' )
+                            step++;
+                        inx = 0;
+                        break;
+                case 1:  //cmd 
+                        cmd[inx++] = data;
+                        if ( inx >=4 )  {
+                            Serial.print("CMD : ");
+                            Serial.println(cmd);
+                            step++;
+                            inx = 0;
+
+
+        if( gameOver )
+        {
+            startGame();
+            return;
+        }
+
+                             switch( cmd[0] )
+                                {
+                               case 'L' :
+
+                              
+                               moveLeft();
+                               
+                               
+                               break;
+
+                            case 'R' :
+                                moveRight(); break;
+
+                               case 'O':
+                               rotateLeft();
+                               break;
+
+                            case 'D':     drop();
+                                break;
+                                
+                            }
+
+                        }
+                        break;
+
+                
+                 
+                          
+                      
+                 
+            }
+       
+        }
+             else
+            {
+                data = -1;
+            }
+
+    } while ( data != -1 );
+   
+    Serial.println("exit");
 }
 
 
@@ -104,7 +218,7 @@ void loop() {
 
 	//check if enough time passed to move the piece
 	//with each level this time is geting shorter
-	if( millis() - loopStartTime > (800 / (gameLevel * 0.80)) )
+	if( millis() - loopStartTime > (800 / (gameLevel * 0.80)) || gameOver )
 	{
 		if( !gameOver )
 		{        
@@ -112,8 +226,16 @@ void loop() {
 			gameOver = !isValidLocation(*fallingPiece, currentColumn, currentRow);       
 		}
 		loopStartTime = millis();
-		render();
+		
 	}
+
+
+    render();
+
+
+ 
+    
+    
 }
 
 
@@ -125,7 +247,26 @@ int leftYState = 0, newYState = 0;
 /// </summary>
 void readButtons()
 {
+
+   char data;
+    while ( HC06.available() )
+    {
+        data = HC06.read();
+        if (data == -1) break;
+        if (data == '@')
+        {
+               btCmdParser();
+        }
+        else
+        {
+            //skip
+        }
+    }
+/*
+
+    
 	wii.update();
+
 
 	if (wii.yPressed()) {
 		if( gameOver )
@@ -179,6 +320,7 @@ void readButtons()
 				moveRight();
 		}
 	}
+   */
    
 }
 
@@ -195,40 +337,19 @@ void setPixel( int row, int column, unsigned long color)
   uint16_t    cr = 0;
    switch( color )
    {
-    case RED:
-        cr = leds.Color888(0xff,0,0);
-        break;
-    case BLUE:
-        cr =  leds.Color888(0,0xff,0);
-        break;
-    case GREEN:
-        cr =  leds.Color888(0,0,0xff);
-        break;
-    case YELLOW:
-        cr = leds.Color888(0xff,0xff,0);
-        break;
-    case MAGENTA:
-        cr = leds.Color888(0, 0xff, 0xff);
-        break;
-    case SALMON:
-        cr =  leds.Color888(0xff, 0, 0xff);
-        break;
-    case INDIGO:
-        cr = leds.Color888(0xff, 0xff, 0xff);
-        break;
-    case WHITE:
-        cr = leds.Color888(0xff, 0xff, 0xff);
-        break;
-    case 0:
-        cr =  leds.Color888(0,0,0);
-        break;
-    default:
-        cr =  leds.Color888(0x30,0x30, 0x30);
-        break;
+    case RED:        cr = leds.Color888(0xff,0,0);        break;
+    case BLUE:        cr =  leds.Color888(0,0xff,0);        break;
+    case GREEN:       cr =  leds.Color888(0,0,0xff);        break;
+    case YELLOW:        cr = leds.Color888(0xff,0xff,0);        break;
+    case MAGENTA:        cr = leds.Color888(0, 0xff, 0xff);        break;
+    case SALMON:        cr =  leds.Color888(0xff, 0, 0xff);        break;
+    case INDIGO:        cr = leds.Color888(0xff, 0xff, 0xff);        break;
+    case WHITE:       cr = leds.Color888(0xff, 0xff, 0xff);        break;
+    case 0:        cr =  leds.Color888(0,0,0);        break;
+    default:        cr =  leds.Color888(0x30,0x30, 0x30);        break;
    }
 
 //   leds.drawPixel( x, y, cr );
-
       leds.drawPixel( x, y, cr );     
 }
 
@@ -237,6 +358,10 @@ void setPixel( int row, int column, unsigned long color)
 /// </summary>
 void render()
 {
+
+    leds.fillScreen(0);     // clear background
+
+    
 	int value = 0;
 	unsigned long color = 0;
 
@@ -275,24 +400,64 @@ void render()
 		}
 	}
  #else
-  int x =  GAME_COLUMNS;
-  leds.drawLine(  LEFT_INDENT -1 , 0, LEFT_INDENT -1, 32, leds.Color888(255,255,255)  );
-  leds.drawLine(  (LEFT_INDENT + GAME_COLUMNS), 0, (LEFT_INDENT + GAME_COLUMNS), 32, leds.Color888(255,255,255)  );
-   leds.drawLine(  0, (TOP_INDENT+GAME_ROWS), 32, (TOP_INDENT+GAME_ROWS), leds.Color888(255,255,255)  );
+
+
+    leds.drawRect( LEFT_INDENT-1, TOP_INDENT-1, GAME_COLUMNS +2, GAME_ROWS +2, leds.Color888(32,32,127) );
+
  #endif
 
 	//render next piece
+    leds.drawRect( NEXT_LEFT-1, NEXT_TOP-1, 5, 6, leds.Color888(32,32,127) );
 	for( int row = 0; row < nextPiece->Rows; row++)
 	{
 		for( int col = 0; col < nextPiece->Columns; col++)
 		{
 			value = (*nextPiece)(row,col);
 			if( value > 0)    
-				setPixel(TOP_INDENT+7+row,LEFT_INDENT+12+col, colors[value-1]);
-			else
-				setPixel(TOP_INDENT+7+row,LEFT_INDENT+12+col, 0);
+				setPixel( NEXT_TOP+row,NEXT_LEFT+col, colors[value-1]);
+	//		else
+	//			setPixel( NEXT_TOP+row,NEXT_LEFT+col, 0);
 		}
 	}  
+
+
+
+
+    if ( gameOver )
+    {
+         leds.setTextSize(0);
+         leds.setTextColor(leds.ColorHSV(hue, 137, 123, true));
+         leds.setCursor(4,12);
+            leds.print("GAME");
+         leds.setCursor(4,20);
+            leds.print("OVER");
+    }
+   
+
+
+
+    {
+
+    if ( displayScore != gameScore )
+        displayScore += 1;
+        
+         leds.setTextSize(9);
+        leds.setTextColor(leds.ColorHSV(34, 137, 123, true));
+         leds.setCursor(2,1);
+
+        char bufScore[10];
+         sprintf( bufScore, "%07d", displayScore);
+          leds.print(bufScore);
+          
+    }
+
+
+
+  hue += 7;
+  if(hue >= 1536)
+    hue -= 1536;
+    
+
 
   //	leds.show();
   leds.swapBuffers(false);
@@ -504,7 +669,7 @@ void updateScore()
 
 	if (count > 0)
 	{
-		//_gameScore += count * (_gameLevel * 10);
+		gameScore += (count * (gameLevel * 10) );
 		gameLines += count;
 
 
@@ -515,4 +680,5 @@ void updateScore()
 			newLevel(gameLevel);
 		}
 	}
+
 }

@@ -1,0 +1,45 @@
+{
+	"project":"e-banner schedule",
+	"version":10, 
+	"array":
+	[
+		{
+			"type":2, 
+   			"id":"0001",
+			"title":"빅세일 동영상 ",
+			"stock":3,
+			"font":5,
+			"text-color":"#FFFF2020",
+			"stock-color":"#FFFFFFFF",
+			"back-color":"#FF444444",
+			"speed":1,
+			"repeat":5,
+			"path":"sale.png"
+		},
+		{
+			"type":2,
+			"id":"0002",
+			"title":"꽃집 ",
+			"speed":6,
+			"repeat":1,
+			"path":"kakaopay.gif"
+		},
+		{
+			"type":2,
+			"id":"0002",
+			"title":"Text Scroll",
+			"speed":6,
+			"repeat":1,
+			"path":"tem_22.gif"
+		},
+		{
+			"type":2,
+			"id":"0002",
+			"title":"날씨 정보 ",
+			"speed":6,
+			"repeat":1,
+			"path":"open_3.gif"
+		}
+
+	]
+}
